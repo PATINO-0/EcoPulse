@@ -33,42 +33,129 @@ class GroqAiService {
     ];
 
     try {
-      final response = await http.post(
-        Uri.parse(_chatCompletionsUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $apiKey',
-        },
-        body: jsonEncode({
-          'model': Environment.groqModel,
-          'messages': requestMessages,
-          'temperature': 0.3,
-          'max_completion_tokens': 700,
-        }),
+      final response = await _postChatCompletion(
+        apiKey: apiKey,
+        messages: requestMessages,
+        temperature: 0.3,
+        maxTokens: 700,
       );
 
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        return 'No fue posible consultar el asistente IA. Código: ${response.statusCode}. Respuesta: ${response.body}';
-      }
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-      final choices = decoded['choices'] as List<dynamic>?;
-
-      if (choices == null || choices.isEmpty) {
-        return 'La IA no devolvió una respuesta válida.';
-      }
-
-      final firstChoice = choices.first as Map<String, dynamic>;
-      final message = firstChoice['message'] as Map<String, dynamic>?;
-      final content = message?['content']?.toString();
-
-      if (content == null || content.trim().isEmpty) {
-        return 'La IA respondió sin contenido útil.';
-      }
-
-      return content.trim();
+      return _extractTextResponse(response);
     } catch (exception) {
       return 'No fue posible conectar con Groq. Verifica internet, la API key y el modelo configurado. Detalle: $exception';
     }
+  }
+
+  Future<Map<String, dynamic>> generateJsonObject({
+    required String systemInstruction,
+    required String userPrompt,
+    int maxTokens = 1600,
+  }) async {
+    final apiKey = Environment.groqApiKey;
+
+    if (apiKey.isEmpty) {
+      throw Exception(
+        'No se encontró GROQ_API_KEY. Configura la API key antes de sincronizar combustibles.',
+      );
+    }
+
+    final response = await _postChatCompletion(
+      apiKey: apiKey,
+      messages: [
+        {
+          'role': 'system',
+          'content': systemInstruction.trim(),
+        },
+        {
+          'role': 'user',
+          'content': userPrompt.trim(),
+        },
+      ],
+      temperature: 0.0,
+      maxTokens: maxTokens,
+      responseFormatJson: true,
+    );
+
+    final content = _extractTextResponse(response);
+    final cleaned = _cleanJsonContent(content);
+    final decoded = jsonDecode(cleaned);
+
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('La IA no devolvió un objeto JSON válido.');
+    }
+
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> _postChatCompletion({
+    required String apiKey,
+    required List<Map<String, String>> messages,
+    required double temperature,
+    required int maxTokens,
+    bool responseFormatJson = false,
+  }) async {
+    final body = <String, dynamic>{
+      'model': Environment.groqModel,
+      'messages': messages,
+      'temperature': temperature,
+      'max_completion_tokens': maxTokens,
+    };
+
+    if (responseFormatJson) {
+      body['response_format'] = {
+        'type': 'json_object',
+      };
+    }
+
+    final response = await http.post(
+      Uri.parse(_chatCompletionsUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Groq respondió con código ${response.statusCode}: ${response.body}',
+      );
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  String _extractTextResponse(Map<String, dynamic> decoded) {
+    final choices = decoded['choices'] as List<dynamic>?;
+
+    if (choices == null || choices.isEmpty) {
+      throw Exception('La IA no devolvió opciones de respuesta.');
+    }
+
+    final firstChoice = choices.first as Map<String, dynamic>;
+    final message = firstChoice['message'] as Map<String, dynamic>?;
+    final content = message?['content']?.toString();
+
+    if (content == null || content.trim().isEmpty) {
+      throw Exception('La IA respondió sin contenido útil.');
+    }
+
+    return content.trim();
+  }
+
+  String _cleanJsonContent(String content) {
+    var cleaned = content.trim();
+
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.substring(7);
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.substring(3);
+    }
+
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+
+    return cleaned.trim();
   }
 }

@@ -15,6 +15,15 @@ class FuelStationModel {
   final String source;
   final bool isOfficial;
   final DateTime? updatedAt;
+  final String? priceSource;
+  final DateTime? priceUpdatedAt;
+  final String? locationSource;
+  final bool locationLocked;
+  final String? externalId;
+  final String? dataProvider;
+  final String? normalizedName;
+  final Map<String, dynamic>? rawProviderPayload;
+  final DateTime? lastDiscoveredAt;
 
   const FuelStationModel({
     required this.id,
@@ -33,29 +42,82 @@ class FuelStationModel {
     this.priceExtra,
     this.priceDiesel,
     this.updatedAt,
+    this.priceSource,
+    this.priceUpdatedAt,
+    this.locationSource,
+    this.locationLocked = true,
+    this.externalId,
+    this.dataProvider,
+    this.normalizedName,
+    this.rawProviderPayload,
+    this.lastDiscoveredAt,
   });
 
   factory FuelStationModel.fromMap(Map<String, dynamic> map) {
     return FuelStationModel(
-      id: map['id'] as String,
-      name: map['name'] as String,
-      brand: map['brand'] as String?,
-      address: map['address'] as String?,
+      id: map['id']?.toString() ?? '',
+      name: map['name']?.toString() ?? 'Estación sin nombre',
+      brand: map['brand']?.toString(),
+      address: map['address']?.toString(),
       latitude: _toDouble(map['latitude']) ?? 0,
       longitude: _toDouble(map['longitude']) ?? 0,
-      city: map['city'] as String,
-      department: map['department'] as String,
-      country: map['country'] as String? ?? 'COLOMBIA',
+      city: map['city']?.toString() ?? '',
+      department: map['department']?.toString() ?? '',
+      country: map['country']?.toString() ?? 'COLOMBIA',
       fuelTypes: _toStringList(map['fuel_types']),
       priceRegular: _toDouble(map['price_regular']),
       priceExtra: _toDouble(map['price_extra']),
       priceDiesel: _toDouble(map['price_diesel']),
-      source: map['source'] as String,
+      source: map['source']?.toString() ?? 'No disponible',
       isOfficial: map['is_official'] as bool? ?? false,
       updatedAt: map['updated_at'] == null
           ? null
           : DateTime.tryParse(map['updated_at'].toString()),
+      priceSource: map['price_source']?.toString(),
+      priceUpdatedAt: map['price_updated_at'] == null
+          ? null
+          : DateTime.tryParse(map['price_updated_at'].toString()),
+      locationSource: map['location_source']?.toString(),
+      locationLocked: map['location_locked'] as bool? ?? true,
+      externalId: map['external_id']?.toString(),
+      dataProvider: map['data_provider']?.toString(),
+      normalizedName: map['normalized_name']?.toString(),
+      rawProviderPayload: map['raw_provider_payload'] is Map<String, dynamic>
+          ? map['raw_provider_payload'] as Map<String, dynamic>
+          : null,
+      lastDiscoveredAt: map['last_discovered_at'] == null
+          ? null
+          : DateTime.tryParse(map['last_discovered_at'].toString()),
     );
+  }
+
+  Map<String, dynamic> toUpsertMap() {
+    return {
+      'name': name.trim(),
+      'brand': brand?.trim(),
+      'address': address?.trim(),
+      'latitude': latitude,
+      'longitude': longitude,
+      'city': city.trim().toUpperCase(),
+      'department': department.trim().toUpperCase(),
+      'country': country.trim().toUpperCase(),
+      'fuel_types': fuelTypes,
+      'price_regular': priceRegular,
+      'price_extra': priceExtra,
+      'price_diesel': priceDiesel,
+      'source': source,
+      'is_official': isOfficial,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+      'price_source': priceSource,
+      'price_updated_at': priceUpdatedAt?.toUtc().toIso8601String(),
+      'location_source': locationSource ?? source,
+      'location_locked': locationLocked,
+      'external_id': externalId,
+      'data_provider': dataProvider,
+      'normalized_name': normalizedName ?? normalizeName(name),
+      'raw_provider_payload': rawProviderPayload,
+      'last_discovered_at': DateTime.now().toUtc().toIso8601String(),
+    };
   }
 
   String get displayName {
@@ -78,6 +140,28 @@ class FuelStationModel {
     return fuelTypes.join(', ');
   }
 
+  bool get hasValidCoordinates {
+    return latitude != 0 && longitude != 0;
+  }
+
+  static String normalizeName(String value) {
+    return value
+        .toUpperCase()
+        .replaceAll('Á', 'A')
+        .replaceAll('É', 'E')
+        .replaceAll('Í', 'I')
+        .replaceAll('Ó', 'O')
+        .replaceAll('Ú', 'U')
+        .replaceAll('Ñ', 'N')
+        .replaceAll(RegExp(r'[^A-Z0-9 ]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll('ESTACION DE SERVICIO', '')
+        .replaceAll('ESTACION SERVICIO', '')
+        .replaceAll('EDS', '')
+        .replaceAll('GASOLINERA', '')
+        .trim();
+  }
+
   static List<String> _toStringList(dynamic value) {
     if (value == null) {
       return [];
@@ -95,18 +179,12 @@ class FuelStationModel {
       return null;
     }
 
-    if (value is double) {
-      return value;
-    }
-
-    if (value is int) {
-      return value.toDouble();
-    }
-
     if (value is num) {
       return value.toDouble();
     }
 
-    return double.tryParse(value.toString());
+    return double.tryParse(
+      value.toString().replaceAll(',', '.').trim(),
+    );
   }
 }

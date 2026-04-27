@@ -3,6 +3,7 @@ import 'package:ecopulse/data/repositories/fuel_station_repository.dart';
 import 'package:ecopulse/presentation/map/widgets/ecopulse_map.dart';
 import 'package:ecopulse/presentation/map/widgets/fuel_station_info_sheet.dart';
 import 'package:ecopulse/presentation/map/widgets/map_legend_card.dart';
+import 'package:ecopulse/services/fuel/fuel_market_sync_service.dart';
 import 'package:ecopulse/services/trip/trip_session_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -27,8 +28,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _stationsFuture =
-        ref.read(fuelStationRepositoryProvider).getStationsForDefaultCity();
+    _stationsFuture = _loadStations();
+  }
+
+  Future<List<FuelStationModel>> _loadStations({
+    bool forcePrices = false,
+  }) async {
+    await ref.read(fuelMarketSyncServiceProvider).syncDailyMarketDataIfNeeded(
+          forcePrices: forcePrices,
+          forceStations: false,
+        );
+
+    return ref.read(fuelStationRepositoryProvider).getStationsForDefaultCity();
   }
 
   void _showStationInfo(FuelStationModel station) {
@@ -67,9 +78,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Future<void> _reloadStations() async {
     setState(() {
-      _stationsFuture =
-          ref.read(fuelStationRepositoryProvider).getStationsForDefaultCity();
+      _stationsFuture = _loadStations(forcePrices: true);
     });
+
+    await _stationsFuture;
   }
 
   @override
@@ -89,7 +101,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           IconButton(
             onPressed: _reloadStations,
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Actualizar estaciones',
+            tooltip: 'Actualizar precios',
           ),
         ],
       ),

@@ -19,19 +19,29 @@ class TripMonetaryCalculationService {
     }
 
     final estimatedCostCop = estimatedGallons * fuelPrice.pricePerGallon;
-
     final costPerKmCop = distanceKm <= 0 ? null : estimatedCostCop / distanceKm;
 
-    final estimatedSavingsCop =
-        estimatedFuelImpactGallons <= 0
-            ? 0.0
-            : estimatedFuelImpactGallons * fuelPrice.pricePerGallon;
+    final estimatedSavingsCop = estimatedFuelImpactGallons <= 0
+        ? 0.0
+        : estimatedFuelImpactGallons * fuelPrice.pricePerGallon;
 
     final warnings = <String>[];
 
     if (!fuelPrice.isOfficial) {
       warnings.add(
-        'El precio usado no está marcado como oficial. Verifica la fuente antes de usarlo en producción.',
+        'El precio usado no está marcado como oficial. Verifica la fuente antes de tomar decisiones económicas.',
+      );
+    }
+
+    if (!fuelPrice.isSyncedToday) {
+      warnings.add(
+        'El precio de combustible no fue sincronizado hoy. El costo monetario puede estar desactualizado.',
+      );
+    }
+
+    if (fuelPrice.confidenceScore > 0 && fuelPrice.confidenceScore < 0.75) {
+      warnings.add(
+        'La confianza del dato de precio es baja. Se recomienda verificar la fuente.',
       );
     }
 

@@ -1,5 +1,6 @@
 import 'package:ecopulse/data/models/fuel_price_model.dart';
 import 'package:ecopulse/data/repositories/fuel_price_repository.dart';
+import 'package:ecopulse/services/fuel/fuel_market_sync_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -19,16 +20,25 @@ class _FuelPricesScreenState extends ConsumerState<FuelPricesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPrices();
+    _pricesFuture = _loadPrices();
   }
 
-  void _loadPrices() {
-    _pricesFuture =
-        ref.read(fuelPriceRepositoryProvider).getFuelPricesForDefaultCity();
+  Future<List<FuelPriceModel>> _loadPrices({
+    bool forcePrices = false,
+  }) async {
+    await ref.read(fuelMarketSyncServiceProvider).syncDailyMarketDataIfNeeded(
+          forcePrices: forcePrices,
+          forceStations: false,
+        );
+
+    return ref.read(fuelPriceRepositoryProvider).getFuelPricesForDefaultCity();
   }
 
   Future<void> _refresh() async {
-    setState(_loadPrices);
+    setState(() {
+      _pricesFuture = _loadPrices(forcePrices: true);
+    });
+
     await _pricesFuture;
   }
 
@@ -70,8 +80,13 @@ class _FuelPricesScreenState extends ConsumerState<FuelPricesScreen> {
                 return ListView(
                   padding: const EdgeInsets.all(22),
                   children: [
-                    Text(
-                      'No fue posible cargar los precios. Detalle: ${snapshot.error}',
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Text(
+                          'No fue posible sincronizar los precios. Detalle: ${snapshot.error}',
+                        ),
+                      ),
                     ),
                   ],
                 );
@@ -81,13 +96,13 @@ class _FuelPricesScreenState extends ConsumerState<FuelPricesScreen> {
 
               if (prices.isEmpty) {
                 return ListView(
-                  padding: EdgeInsets.all(22),
-                  children: [
+                  padding: const EdgeInsets.all(22),
+                  children: const [
                     Card(
                       child: Padding(
                         padding: EdgeInsets.all(18),
                         child: Text(
-                          'No hay precios registrados para Pasto, Nariño. Carga precios en Supabase desde una fuente oficial o administrativa verificada.',
+                          'No hay precios registrados para Pasto, Nariño. Verifica la API key, la conexión a internet y la tabla fuel_prices en Supabase.',
                         ),
                       ),
                     ),
@@ -102,7 +117,7 @@ class _FuelPricesScreenState extends ConsumerState<FuelPricesScreen> {
                     child: Padding(
                       padding: EdgeInsets.all(18),
                       child: Text(
-                        'EcoPulse muestra los precios guardados en Supabase. Si el dato no está marcado como oficial, úsalo solo como referencia de prueba.',
+                        'EcoPulse sincroniza una vez al día los precios de gasolina corriente y diésel/ACPM. Estos valores se usan para calcular el costo monetario estimado de cada trayecto.',
                       ),
                     ),
                   ),
@@ -116,10 +131,11 @@ class _FuelPricesScreenState extends ConsumerState<FuelPricesScreen> {
                               : Icons.info_outline_rounded,
                           color: price.isOfficial ? Colors.green : Colors.orange,
                         ),
-                        title: Text(price.fuelType),
+                        title: Text(price.displayFuelType),
                         subtitle: Text(
                           '${price.city}, ${price.department}\n'
                           'Vigente desde: ${_formatDate(price.validFrom)}\n'
+                          'Sincronizado: ${_formatDate(price.syncDate ?? price.updatedAt)}\n'
                           'Fuente: ${price.source}',
                         ),
                         isThreeLine: true,

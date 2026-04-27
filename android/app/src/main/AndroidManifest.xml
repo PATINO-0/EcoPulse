@@ -1,4 +1,42 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+   
+    <!-- Permisos de ubicación usados por EcoPulse durante el trayecto. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Permiso para notificaciones en Android 13 o superior. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Preparado para futuras fases con foreground service de ubicación. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- Reconocimiento de actividad opcional para futuras mejoras de detección. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- Sensores declarados como opcionales para que la app funcione aunque el teléfono no los tenga. -->
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.sensor.accelerometer"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.sensor.gyroscope"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.sensor.compass"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.sensor.barometer"
+        android:required="false" />
+    
+    
+   
     <application
         android:label="ecopulse"
         android:name="${applicationName}"

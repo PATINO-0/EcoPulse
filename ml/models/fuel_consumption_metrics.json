@@ -1,0 +1,36 @@
+{
+  "train": {
+    "mae": 0.103734,
+    "rmse": 0.143699,
+    "r2": 0.972655,
+    "mape_pct": 7.458216,
+    "wape_pct": 7.128747
+  },
+  "test": {
+    "mae": 0.261387,
+    "rmse": 0.358724,
+    "r2": 0.850942,
+    "mape_pct": 17.578779,
+    "wape_pct": 17.187026
+  },
+  "rows_total": 1200,
+  "rows_train": 960,
+  "rows_test": 240,
+  "features": [
+    "speed_mean",
+    "speed_max",
+    "acceleration_mean",
+    "deceleration_mean",
+    "road_grade_mean",
+    "vehicle_weight_kg",
+    "engine_power_hp",
+    "trip_distance_km",
+    "trip_duration_seconds",
+    "idle_time_seconds",
+    "sensor_variance",
+    "aggressive_events_count",
+    "hard_braking_count"
+  ],
+  "target": "fuel_consumed_gallons",
+  "note": "Estas métricas solo son confiables si el dataset es real, representativo y validado contra mediciones confiables como OBD-II o registros de consumo."
+}

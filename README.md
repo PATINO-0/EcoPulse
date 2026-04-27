@@ -1,23 +1,29 @@
-# ecopulse
+# EcoPulse
 
-A new Flutter project.
+EcoPulse es una aplicación móvil Flutter orientada a estimar consumo de combustible usando sensores del teléfono, ubicación GPS, datos del vehículo, reglas físico-matemáticas y, en futuras fases, modelos de Machine Learning.
 
-## Getting Started
+## Estado actual
 
-This project is a starting point for a Flutter application.
+FASE 1 implementada:
 
-A few resources to get you started if this is your first Flutter project:
+- Arquitectura modular.
+- Configuración inicial de Flutter.
+- Variables de entorno.
+- Inicialización de Supabase.
+- Scripts SQL iniciales.
+- Row Level Security.
+- Seeds demostrativos.
+- Pantalla inicial de verificación.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Requisitos
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Flutter instalado.
+- Android Studio o VS Code.
+- Proyecto Supabase creado.
+- Dispositivo Android físico recomendado para fases de sensores.
+- Archivo `.env` configurado.
 
+## Instalación
 
-
-
-Fin de primera fase de investigacion, inicio de desarrollo y primera fase de inyeccion de dependencias y recursos para el manejo de sensores
-
-
+```bash
+flutter pub get

@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Estación Demo Centro Pasto",
+    "brand": "Demo",
+    "address": "Dirección de ejemplo - reemplazar con fuente oficial",
+    "latitude": 1.21361,
+    "longitude": -77.28111,
+    "city": "PASTO",
+    "department": "NARIÑO",
+    "country": "COLOMBIA",
+    "fuel_types": ["Gasolina corriente", "Diésel"],
+    "price_regular": null,
+    "price_extra": null,
+    "price_diesel": null,
+    "source": "SEED_DEMO_NO_OFICIAL_REEMPLAZAR_CON_FUENTE_VERIFICADA",
+    "is_official": false
+  }
+]

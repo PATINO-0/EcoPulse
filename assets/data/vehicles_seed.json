@@ -1,0 +1,17 @@
+[
+  {
+    "brand": "Marca Demo",
+    "model": "Sedán EcoPulse",
+    "version": "Versión Base",
+    "year": 2020,
+    "engine": "1.6L",
+    "fuel_type": "Gasolina corriente",
+    "power_hp": 110,
+    "weight_kg": 1200,
+    "transmission": "Manual",
+    "estimated_city_km_per_gallon": 35,
+    "estimated_highway_km_per_gallon": 45,
+    "source": "SEED_DEMO_NO_OFICIAL",
+    "is_example": true
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "city": "PASTO",
+    "department": "NARIÑO",
+    "country": "COLOMBIA",
+    "fuel_type": "Gasolina corriente",
+    "price_per_gallon": 13400,
+    "currency": "COP",
+    "source": "SEED_DEMO_NO_OFICIAL_REEMPLAZAR_CON_UPME_SICOM_CREG",
+    "is_official": false,
+    "valid_from": "2026-01-01",
+    "valid_until": null
+  }
+]

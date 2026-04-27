@@ -13,6 +13,10 @@ final sensorServiceProvider = Provider<SensorService>((ref) {
 });
 
 class SensorService {
+  static const Duration _motionSamplingPeriod = Duration(milliseconds: 50);
+  static const Duration _barometerSamplingPeriod = Duration(milliseconds: 250);
+  static const Duration _uiEmitThrottle = Duration(milliseconds: 100);
+
   final StreamController<SensorSampleModel> _controller =
       StreamController<SensorSampleModel>.broadcast();
 
@@ -20,6 +24,8 @@ class SensorService {
 
   SensorSampleModel _latestSample = SensorSampleModel.empty();
   bool _isRunning = false;
+  DateTime? _lastUiEmitAt;
+  Timer? _pendingUiEmitTimer;
 
   Stream<SensorSampleModel> get stream {
     return _controller.stream;
@@ -36,9 +42,11 @@ class SensorService {
 
     _isRunning = true;
 
-    // Se escucha el acelerómetro crudo, útil para orientación y vibración.
+    // Se escucha el acelerómetro crudo con mayor frecuencia para mejorar lectura de movimiento.
     _subscriptions.add(
-      accelerometerEvents.listen(
+      accelerometerEventStream(
+        samplingPeriod: _motionSamplingPeriod,
+      ).listen(
         (event) {
           _emit(
             _latestSample.copyWith(
@@ -56,9 +64,11 @@ class SensorService {
       ),
     );
 
-    // Se escucha aceleración sin gravedad, más útil para conducción.
+    // Se escucha aceleración sin gravedad, más útil para detectar cambios bruscos de conducción.
     _subscriptions.add(
-      userAccelerometerEvents.listen(
+      userAccelerometerEventStream(
+        samplingPeriod: _motionSamplingPeriod,
+      ).listen(
         (event) {
           _emit(
             _latestSample.copyWith(
@@ -76,9 +86,11 @@ class SensorService {
       ),
     );
 
-    // Se escucha giroscopio para detectar rotaciones bruscas.
+    // Se escucha giroscopio para detectar rotaciones o manipulaciones bruscas del dispositivo.
     _subscriptions.add(
-      gyroscopeEvents.listen(
+      gyroscopeEventStream(
+        samplingPeriod: _motionSamplingPeriod,
+      ).listen(
         (event) {
           _emit(
             _latestSample.copyWith(
@@ -98,7 +110,9 @@ class SensorService {
 
     // Se escucha magnetómetro si el dispositivo lo soporta.
     _subscriptions.add(
-      magnetometerEvents.listen(
+      magnetometerEventStream(
+        samplingPeriod: _barometerSamplingPeriod,
+      ).listen(
         (event) {
           _emit(
             _latestSample.copyWith(
@@ -117,9 +131,10 @@ class SensorService {
     );
 
     // Se escucha barómetro si el dispositivo lo soporta.
-     // Se escucha barómetro si el dispositivo lo soporta.
     _subscriptions.add(
-      barometerEventStream().listen(         
+      barometerEventStream(
+        samplingPeriod: _barometerSamplingPeriod,
+      ).listen(
         (event) {
           _emit(
             _latestSample.copyWith(
@@ -137,6 +152,10 @@ class SensorService {
   }
 
   Future<void> stop() async {
+    _pendingUiEmitTimer?.cancel();
+    _pendingUiEmitTimer = null;
+    _lastUiEmitAt = null;
+
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
@@ -148,9 +167,30 @@ class SensorService {
   void _emit(SensorSampleModel sample) {
     _latestSample = sample;
 
-    if (!_controller.isClosed) {
-      _controller.add(sample);
+    if (_controller.isClosed) {
+      return;
     }
+
+    final now = DateTime.now();
+    final lastEmitAt = _lastUiEmitAt;
+
+    if (lastEmitAt == null || now.difference(lastEmitAt) >= _uiEmitThrottle) {
+      _lastUiEmitAt = now;
+      _controller.add(_latestSample);
+      return;
+    }
+
+    _pendingUiEmitTimer ??= Timer(
+      _uiEmitThrottle - now.difference(lastEmitAt),
+      () {
+        _pendingUiEmitTimer = null;
+        _lastUiEmitAt = DateTime.now();
+
+        if (!_controller.isClosed) {
+          _controller.add(_latestSample);
+        }
+      },
+    );
   }
 
   void _addWarning(String warning) {

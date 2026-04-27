@@ -240,4 +240,4 @@ class _MapMarkerBubble extends StatelessWidget {
       ),
     );
   }
-}
+}     

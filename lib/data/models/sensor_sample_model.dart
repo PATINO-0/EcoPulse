@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class SensorSampleModel {
   final double? accelerationX;
   final double? accelerationY;
@@ -75,15 +77,64 @@ class SensorSampleModel {
     );
   }
 
-  double get estimatedUserAccelerationMagnitude {
-    final x = userAccelerationX ?? 0;
-    final y = userAccelerationY ?? 0;
-    final z = userAccelerationZ ?? 0;
+  double get rawAccelerationMagnitude {
+    return _magnitude(
+      accelerationX,
+      accelerationY,
+      accelerationZ,
+    );
+  }
 
-    return (x.abs() + y.abs() + z.abs()) / 3;
+  double get userAccelerationMagnitude {
+    return _magnitude(
+      userAccelerationX,
+      userAccelerationY,
+      userAccelerationZ,
+    );
+  }
+
+  double get estimatedUserAccelerationMagnitude {
+    return userAccelerationMagnitude;
+  }
+
+  double get gyroscopeMagnitude {
+    return _magnitude(
+      gyroscopeX,
+      gyroscopeY,
+      gyroscopeZ,
+    );
   }
 
   bool get hasBarometer {
     return barometerPressure != null;
+  }
+
+  bool get hasMotionSensors {
+    return accelerationX != null ||
+        userAccelerationX != null ||
+        gyroscopeX != null;
+  }
+
+  bool isRecent({
+    DateTime? now,
+    Duration maxAge = const Duration(seconds: 2),
+  }) {
+    final referenceTime = now ?? DateTime.now();
+
+    return referenceTime.difference(timestamp).abs() <= maxAge;
+  }
+
+  static double _magnitude(
+    double? x,
+    double? y,
+    double? z,
+  ) {
+    final safeX = x ?? 0;
+    final safeY = y ?? 0;
+    final safeZ = z ?? 0;
+
+    return sqrt(
+      safeX * safeX + safeY * safeY + safeZ * safeZ,
+    );
   }
 }

@@ -8,7 +8,7 @@ final tripDetectionServiceProvider = Provider<TripDetectionService>((ref) {
 class TripDetectionService {
   static const double autoStartSpeedKmh = 10;
   static const double idleSpeedKmh = 2;
-  static const Duration autoStartValidationDuration = Duration(seconds: 20);
+  static const Duration autoStartValidationDuration = Duration(seconds: 12);
   static const Duration autoFinishIdleDuration = Duration(minutes: 10);
 
   DateTime? _movingStartedAt;
@@ -33,22 +33,24 @@ class TripDetectionService {
   }
 
   bool shouldAutoFinish(LocationSampleModel location) {
-    if (location.speedKmh > idleSpeedKmh) {
-      _idleStartedAt = null;
-      return false;
-    }
+    final idleSeconds = currentIdleSeconds(location);
 
-    _idleStartedAt ??= location.timestamp;
-
-    final idleDuration = location.timestamp.difference(_idleStartedAt!);
-
-    return idleDuration >= autoFinishIdleDuration;
+    return idleSeconds >= autoFinishIdleDuration.inSeconds;
   }
 
   int currentIdleSeconds(LocationSampleModel location) {
-    if (_idleStartedAt == null) {
+    if (!location.hasAcceptableAccuracy) {
+      return _idleStartedAt == null
+          ? 0
+          : location.timestamp.difference(_idleStartedAt!).inSeconds;
+    }
+
+    if (location.speedKmh > idleSpeedKmh) {
+      _idleStartedAt = null;
       return 0;
     }
+
+    _idleStartedAt ??= location.timestamp;
 
     return location.timestamp.difference(_idleStartedAt!).inSeconds;
   }

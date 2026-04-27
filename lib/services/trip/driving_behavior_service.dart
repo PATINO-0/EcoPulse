@@ -1,5 +1,6 @@
 import 'package:ecopulse/data/models/driving_event_model.dart';
 import 'package:ecopulse/data/models/location_sample_model.dart';
+import 'package:ecopulse/data/models/sensor_sample_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final drivingBehaviorServiceProvider = Provider<DrivingBehaviorService>((ref) {
@@ -12,6 +13,8 @@ class DrivingBehaviorService {
   static const double hardBrakingThreshold = -3.0;
   static const double mediumBrakingThreshold = -2.2;
   static const double inefficientSlopeThreshold = 4.0;
+  static const double irregularSensorAccelerationThreshold = 3.8;
+  static const double irregularGyroscopeThreshold = 1.6;
   static const Duration eventCooldown = Duration(seconds: 18);
 
   final Map<String, DateTime> _lastEventTimes = {};
@@ -19,12 +22,12 @@ class DrivingBehaviorService {
   List<DrivingEventModel> detectEvents({
     required String tripId,
     required LocationSampleModel currentLocation,
+    required SensorSampleModel sensorSample,
     required double accelerationMps2,
     required double roadGradePercent,
     required int idleTimeSeconds,
   }) {
     final events = <DrivingEventModel>[];
-
     final now = DateTime.now();
 
     final accelerationEvent = _detectAccelerationEvent(
@@ -47,6 +50,18 @@ class DrivingBehaviorService {
 
     if (brakingEvent != null) {
       events.add(brakingEvent);
+    }
+
+    final sensorMotionEvent = _detectIrregularSensorMotionEvent(
+      tripId: tripId,
+      location: currentLocation,
+      sensorSample: sensorSample,
+      accelerationMps2: accelerationMps2,
+      now: now,
+    );
+
+    if (sensorMotionEvent != null) {
+      events.add(sensorMotionEvent);
     }
 
     final slopeEvent = _detectInefficientSlopeEvent(
@@ -133,6 +148,44 @@ class DrivingBehaviorService {
       location: location,
       accelerationMps2: accelerationMps2,
       fuelImpactEstimate: severity == 'high' ? 0.01 : 0.005,
+      now: now,
+    );
+  }
+
+  DrivingEventModel? _detectIrregularSensorMotionEvent({
+    required String tripId,
+    required LocationSampleModel location,
+    required SensorSampleModel sensorSample,
+    required double accelerationMps2,
+    required DateTime now,
+  }) {
+    if (location.speedKmh < 8) {
+      return null;
+    }
+
+    if (!sensorSample.hasMotionSensors || !sensorSample.isRecent(now: now)) {
+      return null;
+    }
+
+    final hasStrongLinearMotion =
+        sensorSample.userAccelerationMagnitude >= irregularSensorAccelerationThreshold;
+
+    final hasStrongRotation =
+        sensorSample.gyroscopeMagnitude >= irregularGyroscopeThreshold;
+
+    if (!hasStrongLinearMotion && !hasStrongRotation) {
+      return null;
+    }
+
+    return _buildEventIfAllowed(
+      tripId: tripId,
+      eventType: 'irregular_sensor_motion',
+      severity: hasStrongLinearMotion ? 'medium' : 'low',
+      message:
+          'Movimiento brusco detectado. Conduce con suavidad y evita maniobras repentinas.',
+      location: location,
+      accelerationMps2: accelerationMps2,
+      fuelImpactEstimate: 0.006,
       now: now,
     );
   }

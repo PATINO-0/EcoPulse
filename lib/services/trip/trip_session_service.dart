@@ -67,6 +67,7 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
   Timer? _durationTimer;
 
   LocationSampleModel? _lastLocation;
+  double? _lastAccelerationMps2;       // ← NUEVO
   UserVehicleModel? _selectedVehicle;
 
   TripSessionService({
@@ -104,7 +105,6 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
     );
   }
 
-  // ← NUEVO
   void applyUserSettings(UserSettingsModel settings) {
     state = state.copyWith(
       visualAlertsEnabled: settings.visualAlertsEnabled,
@@ -124,6 +124,7 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
       return;
     }
 
+    locationService.resetTrackingFilter();   // ← NUEVO
     sensorService.start();
     _listenSensors();
     _listenLocation();
@@ -199,6 +200,8 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
 
       sensorService.start();
       _listenSensors();
+      locationService.seedLocation(startLocation);   // ← NUEVO
+      _lastAccelerationMps2 = 0;                     // ← NUEVO
       _listenLocation();
       _startDurationTimer();
 
@@ -400,17 +403,35 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
         current: location,
       );
 
-      if (!isGpsJump) {
-        addedDistanceKm = speedService.calculateDistanceKm(
-          previous: previousLocation,
-          current: location,
+      // ── BLOQUE REEMPLAZADO ────────────────────────────────────────────────
+      if (isGpsJump) {
+        state = state.copyWith(
+          currentLocation: location,
+          statusMessage:
+              'Lectura GPS irregular descartada. Esperando una señal más estable...',
+          warnings: _addUniqueWarning(
+            state.warnings,
+            'Se descartó una lectura GPS irregular para evitar errores de velocidad o distancia.',
+          ),
         );
-
-        accelerationMps2 = speedService.calculateAccelerationMps2(
-          previous: previousLocation,
-          current: location,
-        );
+        return;
       }
+
+      addedDistanceKm = speedService.calculateDistanceKm(
+        previous: previousLocation,
+        current: location,
+      );
+
+      final rawAccelerationMps2 = speedService.calculateAccelerationMps2(
+        previous: previousLocation,
+        current: location,
+      );
+
+      accelerationMps2 = speedService.smoothAccelerationMps2(
+        previousAccelerationMps2: _lastAccelerationMps2,
+        currentAccelerationMps2: rawAccelerationMps2,
+      );
+      // ─────────────────────────────────────────────────────────────────────
     }
 
     final totalDistanceKm = state.distanceKm + addedDistanceKm;
@@ -427,6 +448,7 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
     );
 
     _lastLocation = location;
+    _lastAccelerationMps2 = accelerationMps2;   // ← NUEVO
 
     final point = TripPointSampleModel(
       location: location,
@@ -445,6 +467,7 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
       final detectedEvents = drivingBehaviorService.detectEvents(
         tripId: activeTripId,
         currentLocation: location,
+        sensorSample: state.latestSensorSample,   // ← NUEVO
         accelerationMps2: accelerationMps2,
         roadGradePercent: estimation.roadGradePercent,
         idleTimeSeconds: idleSeconds,
@@ -575,6 +598,20 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
     return warnings;
   }
 
+  // ← NUEVO
+  List<String> _addUniqueWarning(
+    List<String> currentWarnings,
+    String warning,
+  ) {
+    final warnings = [...currentWarnings];
+
+    if (!warnings.contains(warning)) {
+      warnings.add(warning);
+    }
+
+    return warnings;
+  }
+
   void _startDurationTimer() {
     _durationTimer?.cancel();
 
@@ -601,6 +638,10 @@ class TripSessionService extends StateNotifier<TripSessionStateModel> {
 
     _durationTimer?.cancel();
     _durationTimer = null;
+
+    _lastLocation = null;                        // ← NUEVO
+    _lastAccelerationMps2 = null;                // ← NUEVO
+    locationService.resetTrackingFilter();       // ← NUEVO
 
     await sensorService.stop();
     await voiceAlertService.stop();

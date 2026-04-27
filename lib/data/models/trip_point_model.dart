@@ -9,6 +9,10 @@ class TripPointModel {
   final double? speedKmh;
   final double? heading;
   final double? accuracy;
+  final double? speedAccuracy;
+  final double? altitudeAccuracy;
+  final double? headingAccuracy;
+  final bool isMocked;
   final DateTime recordedAt;
 
   const TripPointModel({
@@ -21,6 +25,10 @@ class TripPointModel {
     this.speedKmh,
     this.heading,
     this.accuracy,
+    this.speedAccuracy,
+    this.altitudeAccuracy,
+    this.headingAccuracy,
+    this.isMocked = false,
   });
 
   factory TripPointModel.fromMap(Map<String, dynamic> map) {
@@ -33,21 +41,32 @@ class TripPointModel {
       speedKmh: _toDouble(map['speed_kmh']),
       heading: _toDouble(map['heading']),
       accuracy: _toDouble(map['accuracy']),
+      speedAccuracy: _toDouble(map['speed_accuracy']),
+      altitudeAccuracy: _toDouble(map['altitude_accuracy']),
+      headingAccuracy: _toDouble(map['heading_accuracy']),
+      isMocked: map['is_mocked'] as bool? ?? false,
       recordedAt: DateTime.parse(map['recorded_at'].toString()),
     );
   }
 
   LocationSampleModel toLocationSample() {
     final speedKmhValue = speedKmh ?? 0;
+    final speedMpsValue = speedKmhValue / 3.6;
 
     return LocationSampleModel(
       latitude: latitude,
       longitude: longitude,
       altitude: altitude,
-      speedMps: speedKmhValue / 3.6,
+      speedMps: speedMpsValue,
       speedKmh: speedKmhValue,
+      rawSpeedMps: speedMpsValue,
+      calculatedSpeedMps: speedMpsValue,
       heading: heading ?? 0,
       accuracy: accuracy ?? 0,
+      speedAccuracy: speedAccuracy,
+      altitudeAccuracy: altitudeAccuracy,
+      headingAccuracy: headingAccuracy,
+      isMocked: isMocked,
       timestamp: recordedAt,
     );
   }

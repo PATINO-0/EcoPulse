@@ -1,0 +1,108 @@
+@startuml
+start
+
+:Usuario abre EcoPulse;
+
+if (¿Tiene sesión activa?) then (Sí)
+  :Cargar perfil del usuario;
+else (No)
+  :Mostrar Login / Registro;
+  if (¿Usuario se registra?) then (Sí)
+    :Mostrar política de tratamiento de datos;
+    if (¿Acepta política?) then (Sí)
+      :Crear cuenta en Supabase Auth;
+      :Guardar aceptación de política;
+    else (No)
+      :Bloquear registro;
+      stop
+    endif
+  else (Login)
+    :Validar credenciales;
+  endif
+endif
+
+:Solicitar permisos de ubicación y sensores;
+
+if (¿Permisos concedidos?) then (Sí)
+  :Cargar pantalla principal;
+else (No)
+  :Mostrar explicación para activar permisos;
+  stop
+endif
+
+:Verificar vehículo activo;
+
+if (¿Tiene vehículo activo?) then (Sí)
+  :Cargar datos del vehículo;
+else (No)
+  :Mostrar selección de vehículo;
+  if (¿Vehículo existe en catálogo?) then (Sí)
+    :Seleccionar vehículo;
+  else (No)
+    :Registrar vehículo manualmente;
+  endif
+  :Guardar vehículo activo;
+endif
+
+:Entrar a pantalla de trayecto;
+
+fork
+  :Escuchar ubicación GPS;
+fork again
+  :Escuchar acelerómetro;
+fork again
+  :Escuchar giroscopio;
+fork again
+  :Escuchar barómetro si está disponible;
+end fork
+
+if (¿Usuario inicia manualmente?) then (Sí)
+  :Crear trayecto activo;
+else (No)
+  if (¿Velocidad > 10 km/h?) then (Sí)
+    :Validar movimiento real;
+    :Crear trayecto automático;
+  else (No)
+    :Continuar esperando inicio;
+  endif
+endif
+
+while (Trayecto activo?) is (Sí)
+  :Guardar punto GPS;
+  :Guardar muestra de sensores;
+  :Dibujar ruta en mapa;
+  :Calcular velocidad, aceleración y distancia;
+  :Estimar consumo de combustible;
+  :Detectar eventos de conducción;
+
+  if (¿Evento ineficiente detectado?) then (Sí)
+    :Guardar evento;
+    :Generar recomendación;
+    if (¿Alertas por voz activas?) then (Sí)
+      :Reproducir alerta por voz;
+    endif
+    if (¿Alertas visuales activas?) then (Sí)
+      :Mostrar alerta visual;
+    endif
+  endif
+
+  if (¿Usuario finaliza manualmente?) then (Sí)
+    break
+  endif
+
+  if (¿Velocidad 0 km/h por más de 10 minutos?) then (Sí)
+    break
+  endif
+endwhile
+
+:Finalizar trayecto;
+:Calcular distancia total;
+:Calcular consumo estimado;
+:Consultar precio de combustible;
+:Calcular costo monetario en COP;
+:Calcular score de eco-conducción;
+:Guardar resumen en Supabase;
+:Mostrar resumen del trayecto;
+
+stop
+@enduml

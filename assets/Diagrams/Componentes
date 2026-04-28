@@ -1,0 +1,127 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+actor "Usuario / Conductor" as User
+
+package "Aplicación Móvil EcoPulse - Flutter" {
+
+  component "UI Layer\nPantallas y Widgets" as UI
+  component "State Management\nControladores / Providers" as State
+  component "Auth Module" as Auth
+  component "Vehicle Module" as Vehicle
+  component "Trip Module" as Trip
+  component "Sensor Module" as Sensor
+  component "Location Module" as Location
+  component "Map Module" as Map
+  component "Fuel Estimation Module" as FuelEstimation
+  component "Driving Behavior Module" as Behavior
+  component "Fuel Prices Module" as FuelPrices
+  component "Maintenance Module" as Maintenance
+  component "AI Assistant Module" as AI
+  component "Settings Module" as Settings
+  component "Shared Widgets" as SharedWidgets
+  component "Core Utilities\nErrors / Constants / Helpers" as Core
+}
+
+package "Servicios Internos" {
+  component "SupabaseService" as SupabaseService
+  component "PermissionService" as PermissionService
+  component "LocationService" as LocationService
+  component "SensorService" as SensorService
+  component "TripDetectionService" as TripDetection
+  component "FuelEstimationService" as FuelService
+  component "DrivingBehaviorService" as BehaviorService
+  component "MapService" as MapService
+  component "VoiceAlertService" as VoiceService
+  component "GroqAiService" as GroqService
+}
+
+package "Backend Supabase" {
+  database "PostgreSQL Database" as DB
+  component "Supabase Auth" as SupabaseAuth
+  component "Row Level Security\nPolicies" as RLS
+  component "Storage / Edge Functions\nFuturo" as Edge
+}
+
+package "Tablas Supabase" {
+  database "profiles" as TProfiles
+  database "privacy_policy_acceptances" as TPolicy
+  database "vehicles_catalog" as TVehiclesCatalog
+  database "user_vehicles" as TUserVehicles
+  database "trips" as TTrips
+  database "trip_points" as TTripPoints
+  database "sensor_samples" as TSensorSamples
+  database "driving_events" as TDrivingEvents
+  database "fuel_prices" as TFuelPrices
+  database "fuel_stations" as TFuelStations
+  database "maintenance_records" as TMaintenance
+  database "user_settings" as TSettings
+  database "ai_conversations" as TAiConversations
+}
+
+package "Servicios Externos" {
+  component "Proveedor de Mapas\nOpenStreetMap / Mapbox / Similar" as ExternalMap
+  component "Groq API" as ExternalGroq
+  component "Fuentes oficiales\nUPME / SICOM / CREG" as OfficialSources
+  component "Sensores del Dispositivo\nGPS / IMU / Barómetro" as DeviceSensors
+}
+
+User --> UI
+
+UI --> State
+UI --> SharedWidgets
+UI --> Core
+
+State --> Auth
+State --> Vehicle
+State --> Trip
+State --> FuelPrices
+State --> Maintenance
+State --> AI
+State --> Settings
+
+Auth --> SupabaseService
+Vehicle --> SupabaseService
+Trip --> SupabaseService
+FuelPrices --> SupabaseService
+Maintenance --> SupabaseService
+Settings --> SupabaseService
+AI --> GroqService
+
+Trip --> LocationService
+Trip --> SensorService
+Trip --> TripDetection
+Trip --> FuelService
+Trip --> BehaviorService
+Trip --> VoiceService
+Trip --> MapService
+
+LocationService --> DeviceSensors
+SensorService --> DeviceSensors
+MapService --> ExternalMap
+GroqService --> ExternalGroq
+
+SupabaseService --> SupabaseAuth
+SupabaseService --> DB
+DB --> RLS
+
+DB --> TProfiles
+DB --> TPolicy
+DB --> TVehiclesCatalog
+DB --> TUserVehicles
+DB --> TTrips
+DB --> TTripPoints
+DB --> TSensorSamples
+DB --> TDrivingEvents
+DB --> TFuelPrices
+DB --> TFuelStations
+DB --> TMaintenance
+DB --> TSettings
+DB --> TAiConversations
+
+FuelPrices --> OfficialSources
+OfficialSources --> TFuelPrices
+OfficialSources --> TFuelStations
+
+@enduml

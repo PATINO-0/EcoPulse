@@ -1,0 +1,83 @@
+@startuml
+left to right direction
+skinparam linetype ortho
+skinparam shadowing false
+skinparam nodesep 160
+skinparam ranksep 180
+skinparam padding 14
+skinparam ArrowFontSize 9
+skinparam ArrowThickness 1
+skinparam NoteBackgroundColor #FFF9E8
+skinparam NoteBorderColor #D8C98B
+skinparam rectangle {
+  RoundCorner 12
+  Padding 22
+}
+hide stereotype
+
+rectangle "Usuario" as User
+rectangle "LiveTripScreen" as Screen
+
+together {
+  rectangle "PermissionService" as Permissions
+  rectangle "LocationService" as Location
+  rectangle "SensorService" as Sensors
+  rectangle "TripDetectionService" as Detection
+}
+
+together {
+  rectangle "FuelEstimationService" as Fuel
+  rectangle "DrivingBehaviorService" as Behavior
+  rectangle "VoiceAlertService" as Voice
+  rectangle "MapService" as Map
+}
+
+together {
+  rectangle "TripRepository" as Repo
+  rectangle "Supabase DB" as DB <<database>>
+}
+
+User -right-> Screen : 1. Abre trayecto
+Screen -down-> Permissions : 2. Verifica permisos
+Permissions -up-> Screen : 3. Estado permisos
+
+Screen -right-> Location : 4. Inicia GPS
+Screen -right-> Sensors : 5. Lee sensores
+
+Location -down-> Detection : 6. Envía velocidad
+Detection -left-> Screen : 7. Auto inicio si > 10 km/h
+
+User -right-> Screen : 8. Inicio manual
+
+Screen -down-> Repo : 9. Crea trayecto
+Repo -right-> DB : 10. Inserta trips
+DB -left-> Repo : 11. Retorna trip_id
+
+Location -left-> Screen : 12. Envía punto GPS
+Sensors -left-> Screen : 13. Envía muestra
+
+Screen -down-> Map : 14. Dibuja ruta
+Screen -down-> Repo : 15. Guarda punto
+Repo -right-> DB : 16. Inserta trip_points
+
+Screen -down-> Fuel : 17. Estima consumo
+Fuel -up-> Screen : 18. Retorna consumo
+
+Screen -down-> Behavior : 19. Analiza conducción
+Behavior -up-> Screen : 20. Retorna evento
+
+Screen -down-> Repo : 21. Guarda evento
+Repo -right-> DB : 22. Inserta driving_events
+
+Screen -down-> Voice : 23. Envía alerta
+Voice -left-> User : 24. Reproduce voz
+
+User -right-> Screen : 25. Finaliza manual
+Detection -left-> Screen : 26. Finaliza automática
+
+Screen -down-> Fuel : 27. Resume consumo
+Screen -down-> Repo : 28. Cierra trayecto
+Repo -right-> DB : 29. Guarda métricas
+
+Screen -left-> User : 30. Muestra resumen
+@enduml

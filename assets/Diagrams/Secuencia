@@ -1,0 +1,72 @@
+@startuml
+actor "Usuario / Conductor" as User
+
+participant "LiveTripScreen" as Screen
+participant "PermissionService" as Permissions
+participant "TripDetectionService" as TripDetection
+participant "LocationService" as Location
+participant "SensorService" as Sensors
+participant "FuelEstimationService" as FuelEstimator
+participant "DrivingBehaviorService" as Behavior
+participant "VoiceAlertService" as Voice
+participant "MapService" as Map
+participant "TripRepository" as TripRepo
+database "Supabase DB" as DB
+
+User -> Screen: Abre pantalla de trayecto
+Screen -> Permissions: Verificar permisos
+Permissions --> Screen: Permisos concedidos
+
+alt Inicio manual
+    User -> Screen: Presiona "Iniciar trayecto"
+    Screen -> TripRepo: Crear trayecto
+    TripRepo -> DB: Insertar registro en trips
+    DB --> TripRepo: trip_id
+    TripRepo --> Screen: Trayecto activo
+else Inicio automático
+    Location -> TripDetection: Enviar velocidad actual
+    TripDetection -> TripDetection: Validar velocidad > 10 km/h
+    TripDetection --> Screen: Iniciar trayecto automáticamente
+    Screen -> TripRepo: Crear trayecto
+    TripRepo -> DB: Insertar registro en trips
+    DB --> TripRepo: trip_id
+end
+
+loop Durante el trayecto
+    Location -> Screen: Nueva ubicación GPS
+    Sensors -> Screen: Nueva muestra de sensores
+
+    Screen -> Map: Dibujar punto en ruta
+    Screen -> TripRepo: Guardar punto del trayecto
+    TripRepo -> DB: Insertar trip_points
+
+    Screen -> FuelEstimator: Estimar consumo actual
+    FuelEstimator --> Screen: Consumo estimado
+
+    Screen -> Behavior: Detectar eventos de conducción
+    Behavior --> Screen: Evento detectado o vacío
+
+    alt Evento detectado
+        Screen -> TripRepo: Guardar evento
+        TripRepo -> DB: Insertar driving_events
+        Screen -> Voice: Emitir recomendación por voz
+        Voice --> User: Eco-feedback
+    end
+end
+
+alt Finalización manual
+    User -> Screen: Presiona "Finalizar trayecto"
+else Finalización automática
+    TripDetection -> Screen: Velocidad 0 km/h por más de 10 minutos
+end
+
+Screen -> FuelEstimator: Calcular resumen final
+FuelEstimator --> Screen: Métricas finales
+
+Screen -> TripRepo: Actualizar trayecto finalizado
+TripRepo -> DB: Update trips
+DB --> TripRepo: Confirmación
+
+Screen --> User: Mostrar resumen del trayecto
+
+@enduml

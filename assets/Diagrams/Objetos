@@ -1,0 +1,115 @@
+@startuml
+skinparam objectAttributeIconSize 0
+
+object "userProfile:Lina" as user {
+  id = "user_001"
+  fullName = "Lina"
+  email = "lina@email.com"
+}
+
+object "settings:UserSettings" as settings {
+  consumptionUnit = "km/galón"
+  voiceAlertsEnabled = true
+  visualAlertsEnabled = true
+  ecoFeedbackEnabled = true
+}
+
+object "vehicle:UserVehicle" as vehicle {
+  id = "vehicle_001"
+  brand = "Chevrolet"
+  model = "Spark GT"
+  engine = "1.2L"
+  weightKg = 950
+  powerHp = 80
+  isActive = true
+}
+
+object "trip:Trip" as trip {
+  id = "trip_001"
+  status = "finished"
+  distanceKm = 12.4
+  durationMinutes = 28
+  estimatedFuelGallons = 0.36
+  estimatedCostCop = 4824
+  kmPerGallon = 34.4
+  ecoScore = 82
+}
+
+object "pointStart:TripPoint" as pointStart {
+  latitude = 1.21361
+  longitude = -77.28111
+  speedKmh = 0
+  recordedAt = "2026-04-27 08:00"
+}
+
+object "pointMiddle:TripPoint" as pointMiddle {
+  latitude = 1.21780
+  longitude = -77.28450
+  speedKmh = 38
+  recordedAt = "2026-04-27 08:12"
+}
+
+object "pointEnd:TripPoint" as pointEnd {
+  latitude = 1.22510
+  longitude = -77.29030
+  speedKmh = 0
+  recordedAt = "2026-04-27 08:28"
+}
+
+object "sensorSample:SensorSample" as sample {
+  accelerationX = 2.8
+  accelerationY = 0.4
+  accelerationZ = 9.7
+  gyroscopeX = 0.02
+  gyroscopeY = 0.01
+  gyroscopeZ = 0.05
+}
+
+object "event:DrivingEvent" as event {
+  eventType = "Aceleración brusca"
+  severity = "Media"
+  speedKmh = 42
+  acceleration = 2.8
+  message = "Evita acelerar bruscamente."
+}
+
+object "fuelPrice:FuelPrice" as price {
+  city = "PASTO"
+  department = "NARIÑO"
+  fuelType = "Gasolina corriente"
+  pricePerGallon = 13400
+  source = "Fuente oficial pendiente"
+}
+
+object "station:FuelStation" as station {
+  name = "Estación Centro Pasto"
+  brand = "Demo"
+  city = "PASTO"
+  department = "NARIÑO"
+  isOfficial = false
+}
+
+object "maintenance:MaintenanceRecord" as maintenance {
+  maintenanceType = "Presión de llantas"
+  status = "Pendiente"
+  notes = "Revisar antes del próximo viaje largo"
+}
+
+user --> settings
+user --> vehicle
+user --> trip
+user --> maintenance
+
+vehicle --> trip
+vehicle --> maintenance
+
+trip --> pointStart
+trip --> pointMiddle
+trip --> pointEnd
+trip --> sample
+trip --> event
+trip --> price
+
+station --> price
+
+@enduml

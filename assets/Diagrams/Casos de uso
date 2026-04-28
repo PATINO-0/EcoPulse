@@ -1,0 +1,123 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor "Usuario / Conductor" as User
+actor "Administrador de Datos" as Admin
+actor "Supabase Auth" as SupabaseAuth
+actor "Supabase DB" as SupabaseDB
+actor "Groq API" as Groq
+actor "Fuentes oficiales\nUPME / SICOM / CREG" as OfficialSources
+actor "Servicio de Mapas" as MapProvider
+actor "Sensores del Teléfono" as Sensors
+
+rectangle "EcoPulse" {
+
+  usecase "Registrarse" as UC_Register
+  usecase "Aceptar política de\ntratamiento de datos" as UC_AcceptPolicy
+  usecase "Iniciar sesión" as UC_Login
+  usecase "Cerrar sesión" as UC_Logout
+
+  usecase "Solicitar permisos\nde ubicación y sensores" as UC_Permissions
+  usecase "Seleccionar vehículo" as UC_SelectVehicle
+  usecase "Registrar vehículo manualmente" as UC_ManualVehicle
+  usecase "Cambiar vehículo activo" as UC_ChangeVehicle
+
+  usecase "Iniciar trayecto manualmente" as UC_StartManual
+  usecase "Iniciar trayecto automáticamente" as UC_StartAuto
+  usecase "Finalizar trayecto manualmente" as UC_EndManual
+  usecase "Finalizar trayecto automáticamente" as UC_EndAuto
+
+  usecase "Visualizar ubicación\nen tiempo real" as UC_LiveLocation
+  usecase "Trazar ruta en el mapa" as UC_DrawRoute
+  usecase "Guardar puntos del trayecto" as UC_SavePoints
+
+  usecase "Capturar datos de sensores" as UC_CaptureSensors
+  usecase "Estimar consumo\nde combustible" as UC_EstimateFuel
+  usecase "Detectar malas prácticas\nde conducción" as UC_DetectEvents
+  usecase "Generar eco-feedback\nen tiempo real" as UC_EcoFeedback
+  usecase "Emitir alerta visual" as UC_VisualAlert
+  usecase "Emitir alerta por voz" as UC_VoiceAlert
+
+  usecase "Consultar resumen\ndel trayecto" as UC_TripSummary
+  usecase "Calcular costo monetario\ndel combustible" as UC_CalculateCost
+  usecase "Consultar historial\nde trayectos" as UC_History
+  usecase "Filtrar y ordenar viajes" as UC_FilterTrips
+
+  usecase "Consultar precios\nde combustible" as UC_FuelPrices
+  usecase "Visualizar estaciones\nde servicio en mapa" as UC_FuelStations
+
+  usecase "Consultar asistente IA" as UC_AiAssistant
+  usecase "Solicitar recomendaciones\nde mantenimiento" as UC_MaintenanceTips
+  usecase "Registrar mantenimiento\npreventivo" as UC_MaintenanceRecord
+
+  usecase "Actualizar precios oficiales" as UC_UpdatePrices
+  usecase "Actualizar estaciones\nde servicio" as UC_UpdateStations
+}
+
+User --> UC_Register
+User --> UC_Login
+User --> UC_Logout
+User --> UC_Permissions
+User --> UC_SelectVehicle
+User --> UC_ManualVehicle
+User --> UC_ChangeVehicle
+User --> UC_StartManual
+User --> UC_EndManual
+User --> UC_LiveLocation
+User --> UC_History
+User --> UC_FilterTrips
+User --> UC_FuelPrices
+User --> UC_FuelStations
+User --> UC_AiAssistant
+User --> UC_MaintenanceRecord
+
+Admin --> UC_UpdatePrices
+Admin --> UC_UpdateStations
+
+UC_Register --> UC_AcceptPolicy : <<include>>
+UC_Register --> SupabaseAuth
+UC_Login --> SupabaseAuth
+UC_Logout --> SupabaseAuth
+
+UC_StartAuto --> UC_CaptureSensors : <<include>>
+UC_StartAuto --> UC_LiveLocation : <<include>>
+UC_EndAuto --> UC_TripSummary : <<include>>
+
+UC_StartManual --> UC_CaptureSensors : <<include>>
+UC_StartManual --> UC_LiveLocation : <<include>>
+UC_EndManual --> UC_TripSummary : <<include>>
+
+UC_LiveLocation --> UC_DrawRoute : <<include>>
+UC_DrawRoute --> UC_SavePoints : <<include>>
+UC_CaptureSensors --> Sensors
+UC_LiveLocation --> MapProvider
+UC_DrawRoute --> MapProvider
+
+UC_EstimateFuel --> UC_CaptureSensors : <<include>>
+UC_DetectEvents --> UC_CaptureSensors : <<include>>
+UC_EcoFeedback --> UC_DetectEvents : <<include>>
+UC_EcoFeedback --> UC_VisualAlert : <<include>>
+UC_EcoFeedback --> UC_VoiceAlert : <<extend>>
+
+UC_TripSummary --> UC_CalculateCost : <<include>>
+UC_TripSummary --> UC_EstimateFuel : <<include>>
+UC_TripSummary --> SupabaseDB
+UC_History --> SupabaseDB
+UC_SavePoints --> SupabaseDB
+UC_CalculateCost --> UC_FuelPrices : <<include>>
+
+UC_FuelPrices --> OfficialSources
+UC_FuelPrices --> SupabaseDB
+UC_FuelStations --> SupabaseDB
+
+UC_AiAssistant --> Groq
+UC_MaintenanceTips --> Groq
+UC_AiAssistant --> UC_MaintenanceTips : <<include>>
+
+UC_UpdatePrices --> OfficialSources
+UC_UpdatePrices --> SupabaseDB
+UC_UpdateStations --> SupabaseDB
+
+@enduml

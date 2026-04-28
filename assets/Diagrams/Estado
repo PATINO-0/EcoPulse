@@ -1,0 +1,47 @@
+@startuml
+hide empty description
+
+[*] --> SinTrayectoActivo
+
+SinTrayectoActivo --> EsperandoPermisos : Abrir app
+EsperandoPermisos --> PermisosConcedidos : Permisos aceptados
+EsperandoPermisos --> PermisosDenegados : Permisos rechazados
+
+PermisosDenegados --> EsperandoPermisos : Usuario reintenta permisos
+PermisosDenegados --> [*] : Usuario abandona proceso
+
+PermisosConcedidos --> EsperandoInicio : App lista
+
+EsperandoInicio --> TrayectoActivo : Inicio manual
+EsperandoInicio --> ValidandoInicioAutomatico : Velocidad > 10 km/h
+
+ValidandoInicioAutomatico --> TrayectoActivo : Movimiento confirmado
+ValidandoInicioAutomatico --> EsperandoInicio : Falso positivo GPS
+
+TrayectoActivo --> CapturandoDatos : GPS y sensores activos
+CapturandoDatos --> EstimandoConsumo : Nueva muestra válida
+EstimandoConsumo --> AnalizandoConduccion : Consumo actualizado
+AnalizandoConduccion --> GenerandoEcoFeedback : Evento ineficiente detectado
+GenerandoEcoFeedback --> CapturandoDatos : Alerta mostrada
+
+AnalizandoConduccion --> CapturandoDatos : Sin evento crítico
+
+CapturandoDatos --> PausadoPorFalloTemporal : Pérdida temporal de GPS/sensores
+PausadoPorFalloTemporal --> CapturandoDatos : Señal recuperada
+PausadoPorFalloTemporal --> FinalizandoTrayecto : Fallo prolongado
+
+CapturandoDatos --> ValidandoFinalizacionAutomatica : Velocidad cercana a 0
+ValidandoFinalizacionAutomatica --> CapturandoDatos : Usuario vuelve a moverse
+ValidandoFinalizacionAutomatica --> FinalizandoTrayecto : Ralentí > 10 minutos
+
+CapturandoDatos --> FinalizandoTrayecto : Usuario presiona finalizar
+
+FinalizandoTrayecto --> CalculandoResumen : Consolidar métricas
+CalculandoResumen --> GuardandoTrayecto : Calcular consumo, costo y score
+GuardandoTrayecto --> TrayectoFinalizado : Datos guardados en Supabase
+
+TrayectoFinalizado --> MostrandoResumen : Mostrar resultados
+MostrandoResumen --> SinTrayectoActivo : Volver al inicio
+MostrandoResumen --> [*]
+
+@enduml

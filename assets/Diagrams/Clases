@@ -1,0 +1,270 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+class UserProfile {
+  +String id
+  +String fullName
+  +String email
+  +DateTime createdAt
+  +DateTime updatedAt
+  +updateProfile(): void
+}
+
+class PrivacyPolicyAcceptance {
+  +String id
+  +String userId
+  +Boolean acceptedPolicy
+  +String policyVersion
+  +DateTime acceptedAt
+}
+
+class VehicleCatalog {
+  +String id
+  +String brand
+  +String model
+  +String version
+  +int year
+  +String engine
+  +String fuelType
+  +double powerHp
+  +double weightKg
+  +String transmission
+  +double estimatedCityKmPerGallon
+  +double estimatedHighwayKmPerGallon
+  +String source
+}
+
+class UserVehicle {
+  +String id
+  +String userId
+  +String vehicleCatalogId
+  +String customBrand
+  +String customModel
+  +String customEngine
+  +double customWeightKg
+  +double customPowerHp
+  +Boolean isActive
+  +DateTime createdAt
+  +setAsActive(): void
+}
+
+class Trip {
+  +String id
+  +String userId
+  +String userVehicleId
+  +DateTime startedAt
+  +DateTime endedAt
+  +double distanceKm
+  +double durationMinutes
+  +double avgSpeedKmh
+  +double estimatedFuelGallons
+  +double estimatedFuelLiters
+  +double kmPerGallon
+  +double litersPer100Km
+  +double estimatedCostCop
+  +double ecoScore
+  +String status
+  +finishTrip(): void
+  +calculateSummary(): void
+}
+
+class TripPoint {
+  +String id
+  +String tripId
+  +double latitude
+  +double longitude
+  +double altitude
+  +double speedKmh
+  +double heading
+  +double accuracy
+  +DateTime recordedAt
+}
+
+class SensorSample {
+  +String id
+  +String tripId
+  +double accelerationX
+  +double accelerationY
+  +double accelerationZ
+  +double gyroscopeX
+  +double gyroscopeY
+  +double gyroscopeZ
+  +double barometerPressure
+  +DateTime recordedAt
+}
+
+class DrivingEvent {
+  +String id
+  +String tripId
+  +String eventType
+  +String severity
+  +String message
+  +double latitude
+  +double longitude
+  +double speedKmh
+  +double acceleration
+  +double fuelImpactEstimate
+  +DateTime detectedAt
+}
+
+class FuelPrice {
+  +String id
+  +String city
+  +String department
+  +String country
+  +String fuelType
+  +double pricePerGallon
+  +String source
+  +DateTime validFrom
+  +DateTime validUntil
+  +DateTime updatedAt
+}
+
+class FuelStation {
+  +String id
+  +String name
+  +String brand
+  +String address
+  +double latitude
+  +double longitude
+  +String city
+  +String department
+  +String country
+  +String fuelTypes
+  +double priceRegular
+  +double priceExtra
+  +double priceDiesel
+  +String source
+  +Boolean isOfficial
+  +DateTime updatedAt
+}
+
+class MaintenanceRecord {
+  +String id
+  +String userId
+  +String userVehicleId
+  +String maintenanceType
+  +DateTime lastDoneAt
+  +DateTime nextDueAt
+  +String notes
+  +String status
+}
+
+class UserSettings {
+  +String id
+  +String userId
+  +String consumptionUnit
+  +Boolean voiceAlertsEnabled
+  +Boolean visualAlertsEnabled
+  +Boolean ecoFeedbackEnabled
+  +DateTime updatedAt
+}
+
+class AuthService {
+  +register(email, password): UserProfile
+  +login(email, password): UserProfile
+  +logout(): void
+  +getCurrentUser(): UserProfile
+}
+
+class SupabaseService {
+  +initialize(): void
+  +getClient(): Object
+}
+
+class PermissionService {
+  +requestLocationPermission(): Boolean
+  +requestSensorPermissions(): Boolean
+  +checkPermissions(): Boolean
+}
+
+class LocationService {
+  +getCurrentLocation(): TripPoint
+  +watchLocation(): Stream<TripPoint>
+}
+
+class SensorService {
+  +watchAccelerometer(): Stream<SensorSample>
+  +watchGyroscope(): Stream<SensorSample>
+  +watchBarometer(): Stream<SensorSample>
+}
+
+class TripDetectionService {
+  +shouldStartTrip(speedKmh): Boolean
+  +shouldEndTrip(speedKmh, idleTime): Boolean
+}
+
+class FuelEstimationService {
+  +estimateFuelRate(sample, vehicle): double
+  +calculateKmPerGallon(trip): double
+  +calculateLitersPer100Km(trip): double
+  +calculateTripCost(trip, fuelPrice): double
+}
+
+class DrivingBehaviorService {
+  +detectHardAcceleration(sample): DrivingEvent
+  +detectHardBraking(sample): DrivingEvent
+  +detectIdling(speed, time): DrivingEvent
+  +calculateEcoScore(events): double
+}
+
+class MapService {
+  +drawRoute(points): void
+  +showFuelStations(stations): void
+}
+
+class VoiceAlertService {
+  +speak(message): void
+  +stop(): void
+}
+
+class FuelPriceService {
+  +getCurrentFuelPrice(city, fuelType): FuelPrice
+  +getFuelStations(city): List<FuelStation>
+}
+
+class GroqAiService {
+  +sendPrompt(prompt): String
+  +getVehicleAdvice(vehicle): String
+  +getMaintenanceAdvice(vehicle): String
+}
+
+class MaintenanceService {
+  +createRecord(record): void
+  +getRecords(vehicleId): List<MaintenanceRecord>
+}
+
+UserProfile "1" --> "0..*" UserVehicle
+UserProfile "1" --> "0..*" Trip
+UserProfile "1" --> "1" UserSettings
+UserProfile "1" --> "0..*" PrivacyPolicyAcceptance
+UserProfile "1" --> "0..*" MaintenanceRecord
+
+VehicleCatalog "1" --> "0..*" UserVehicle
+UserVehicle "1" --> "0..*" Trip
+UserVehicle "1" --> "0..*" MaintenanceRecord
+
+Trip "1" --> "0..*" TripPoint
+Trip "1" --> "0..*" SensorSample
+Trip "1" --> "0..*" DrivingEvent
+
+FuelPriceService --> FuelPrice
+FuelPriceService --> FuelStation
+FuelEstimationService --> Trip
+FuelEstimationService --> VehicleCatalog
+FuelEstimationService --> FuelPrice
+
+DrivingBehaviorService --> SensorSample
+DrivingBehaviorService --> DrivingEvent
+
+TripDetectionService --> LocationService
+MapService --> TripPoint
+MapService --> FuelStation
+
+AuthService --> SupabaseService
+FuelPriceService --> SupabaseService
+MaintenanceService --> SupabaseService
+GroqAiService --> MaintenanceService
+
+@enduml
